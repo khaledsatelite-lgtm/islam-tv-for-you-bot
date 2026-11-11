@@ -1,7 +1,7 @@
 
-import os
-import logging
-import requests
+استيراد نظام التشغيل
+استيراد التسجيل
+طلبات الاستيراد
 from flask import Flask, request
 
 app = Flask(__name__)
@@ -14,50 +14,50 @@ SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 
 TG = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
-# Temporary conversation states
+حالات المحادثة المؤقتة
 states = {}
 
 
 # =====================================
-# TELEGRAM
+# تيليجرام
 # =====================================
 
 def tg(method, payload):
     r = requests.post(
         f"{TG}/{method}",
         json=payload,
-        timeout=20
+        مهلة = 20
     )
     r.raise_for_status()
-    return r.json()
+    إرجاع r.json()
 
 
-def send(chat_id, text, keyboard=None):
-    payload = {"chat_id": chat_id, "text": text}
-    if keyboard:
+دالة إرسال (معرف_الدردشة، نص، لوحة_المفاتيح=لا_شيء):
+    الحمولة = {"chat_id": chat_id, "text": text}
+    إذا كانت لوحة المفاتيح:
         payload["reply_markup"] = {"inline_keyboard": keyboard}
     tg("sendMessage", payload)
 
 
 def edit_message(chat_id, message_id, text, keyboard=None):
-    payload = {
+    الحمولة = {
         "chat_id": chat_id,
         "message_id": message_id,
-        "text": text
+        "نص": نص
     }
-    if keyboard:
+    إذا كانت لوحة المفاتيح:
         payload["reply_markup"] = {"inline_keyboard": keyboard}
     tg("editMessageText", payload)
 
 
 def callback_answer(callback_id, text=""):
-    try:
+    حاول:
         tg("answerCallbackQuery", {
             "callback_query_id": callback_id,
-            "text": text
+            "نص": نص
         })
-    except Exception:
-        pass
+    باستثناء الاستثناء:
+        تمرير
 
 
 # =====================================
@@ -65,32 +65,32 @@ def callback_answer(callback_id, text=""):
 # =====================================
 
 def db(method, table, params=None, body=None):
-    if not SUPABASE_URL or not SUPABASE_KEY:
-        raise Exception("إعدادات Supabase غير موجودة")
+    إذا لم يكن SUPABASE_URL أو لم يكن SUPABASE_KEY:
+        رفع الاستثناء("إعدادات Supabase غير موجودة")
 
-    headers = {
+    الرؤوس = {
         "apikey": SUPABASE_KEY,
-        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "التفويض": f"Bearer {SUPABASE_KEY}",
         "Content-Type": "application/json",
-        "Prefer": "return=representation"
+        "تفضيل": "return=representation"
     }
 
     r = requests.request(
-        method,
+        طريقة،
         f"{SUPABASE_URL}/rest/v1/{table}",
         headers=headers,
         params=params,
         json=body,
-        timeout=25
+        مهلة = 25
     )
 
-    if not r.ok:
+    إذا لم يكن r.ok:
         logging.error("Supabase %s: %s", table, r.text[:500])
-        raise Exception(
-            f"خطأ قاعدة البيانات ({r.status_code}): {r.text[:250]}"
+        ارفع استثناءً (
+            f" قاعدة خطأ البيانات ({r.status_code}): {r.text[:250]}"
         )
 
-    return r.json() if r.text else []
+    أعد r.json() إذا كان r.text وإلا []
 
 
 def products(active=True):
@@ -98,32 +98,32 @@ def products(active=True):
         "select": "id,name,category,purchase_price,selling_price,active",
         "order": "name.asc"
     }
-    if active:
+    إذا كان نشطًا:
         params["active"] = "eq.true"
     return db("GET", "products", params)
 
 
 def customers():
-    return db(
-        "GET", "customers",
+    إرجاع قاعدة البيانات (
+        "GET"، "customers"،
         {"select": "*", "order": "id.desc", "limit": "30"}
     )
 
 
 def product_by_id(pid):
-    rows = db(
-        "GET", "products",
+    صفوف = قاعدة البيانات (
+        "GET"، "products"،
         {"id": f"eq.{pid}", "select": "*", "limit": "1"}
     )
-    return rows[0] if rows else None
+    أعد الصف الأول إذا كان هناك صفوف، وإلا فأعد لا شيء
 
 
 def customer_by_id(cid):
-    rows = db(
-        "GET", "customers",
+    صفوف = قاعدة البيانات (
+        "GET"، "customers"،
         {"id": f"eq.{cid}", "select": "*", "limit": "1"}
     )
-    return rows[0] if rows else None
+    أعد الصف الأول إذا كان هناك صفوف، وإلا فأعد لا شيء
 
 
 def fmt(value):
@@ -131,34 +131,34 @@ def fmt(value):
 
 
 # =====================================
-# MAIN MENU
+# القائمة الرئيسية
 # =====================================
 
 def main_menu(chat_id):
-    keyboard = [
+    لوحة المفاتيح = [
         [{"text": "🛒 عملية بيع جديدة", "callback_data": "sale"}],
         [{"text": "📦 عرض المنتجات", "callback_data": "products"}],
-        [{"text": "➕ إضافة منتج", "callback_data": "addproduct"}],
-        [{"text": "✏️ تعديل الأسعار", "callback_data": "editproduct"}],
-        [{"text": "⛔ إيقاف منتج", "callback_data": "offproduct"}],
-        [{"text": "👥 العملاء", "callback_data": "customers"}],
+        [{"text": "➕ إضافة منتج"، "callback_data": "addproduct"}]،
+        [{"text": "✏️ تعديل التصاميم", "callback_data": "editproduct"}],
+        [{"text": "⛔ إيقاف المنتج"، "callback_data": "offproduct"}],
+        [{"text": "👥 العملاء"، "callback_data": "customers"}]،
         [{"text": "➕ إضافة عميل", "callback_data": "addcustomer"}],
         [{"text": "📊 تقرير المبيعات", "callback_data": "report"}],
         [{"text": "🔄 تحديث القائمة", "callback_data": "menu"}]
     ]
-    send(chat_id, "📺 Islam TV For You\n\nاختر العملية:", keyboard)
+    send(chat_id, "📺 تلفزيون الإسلام من أجلك\n\nاختر الصحيح:", Keyboard)
 
 
 # =====================================
-# PRODUCTS
+# منتجات
 # =====================================
 
 def show_products(chat_id):
-    try:
-        rows = products()
-        if not rows:
-            send(chat_id, "لا توجد منتجات مفعّلة.")
-            return
+    حاول:
+        صفوف = منتجات()
+        إذا لم تكن هناك صفوف:
+            send(chat_id, "لا توجد منتجات مفعّلة."")
+            إرجاع
 
         lines = ["📦 المنتجات المفعّلة:\n"]
         for p in rows:
@@ -169,164 +169,164 @@ def show_products(chat_id):
                 f"البيع: {fmt(p['selling_price'])} دج\n"
             )
         send(chat_id, "\n".join(lines))
-    except Exception as e:
-        send(chat_id, f"❌ خطأ: {e}")
+    باستثناء الاستثناء كـ e:
+        إرسال(chat_id, f"❌ خطأ: {e}")
 
 
 def product_buttons(chat_id, prefix):
-    rows = products()
-    if not rows:
-        send(chat_id, "لا توجد منتجات مفعّلة.")
-        return
+    صفوف = منتجات()
+    إذا لم تكن هناك صفوف:
+        send(chat_id, "لا توجد منتجات مفعّلة."")
+        إرجاع
 
-    keyboard = []
+    لوحة المفاتيح = []
     for p in rows[:40]:
         keyboard.append([{
-            "text": p["name"],
+            "نص": p["اسم"],
             "callback_data": f"{prefix}:{p['id']}"
         }])
 
-    send(chat_id, "اختر المنتج:", keyboard)
+    إرسال (chat_id، "اختر المنتج:"، لوحة المفاتيح)
 
 
 # =====================================
-# ADD PRODUCT
+# إضافة منتج
 # =====================================
 
 def start_add_product(chat_id, uid):
     states[uid] = {"step": "p_name"}
-    send(chat_id, "أرسل اسم المنتج الجديد.\nأرسل /cancel للإلغاء.")
+    send(chat_id, "أرسل اسم المنتج الجديد.\nأرسل /إلغاء للإلغاء.")
 
 
-def add_product_step(chat_id, uid, text):
+دالة إضافة_خطوة_المنتج(معرف_المحادثة، معرف_التطبيق، النص):
     s = states[uid]
-    step = s["step"]
+    خطوة = s["خطوة"]
 
-    if step == "p_name":
-        s["name"] = text
+    إذا كانت الخطوة تساوي "p_name":
+        s["name"] = نص
         s["step"] = "p_category"
         send(chat_id, "أرسل تصنيف المنتج.")
 
     elif step == "p_category":
-        s["category"] = text
+        s["category"] = نص
         s["step"] = "p_cost"
         send(chat_id, "أرسل سعر الشراء بالدينار.")
 
     elif step == "p_cost":
-        try:
+        حاول:
             x = float(text.replace(",", "."))
-            if x < 0:
-                raise ValueError()
+            إذا كانت قيمة x أقل من 0:
+                ارفع ValueError()
             s["cost"] = x
             s["step"] = "p_sell"
             send(chat_id, "أرسل سعر البيع بالدينار.")
-        except ValueError:
-            send(chat_id, "أدخل مبلغاً صحيحاً.")
+        باستثناء ValueError:
+            send(chat_id, "أدخل مبلغاً عادياً.")
 
     elif step == "p_sell":
-        try:
+        حاول:
             x = float(text.replace(",", "."))
-            if x < 0:
-                raise ValueError()
+            إذا كانت قيمة x أقل من 0:
+                ارفع ValueError()
             s["sell"] = x
             s["step"] = "p_notes"
             send(chat_id, "أرسل الملاحظات أو - بدون ملاحظات.")
-        except ValueError:
-            send(chat_id, "أدخل مبلغاً صحيحاً.")
+        باستثناء ValueError:
+            send(chat_id, "أدخل مبلغاً عادياً.")
 
     elif step == "p_notes":
-        try:
+        حاول:
             db("POST", "products", body={
-                "name": s["name"],
+                "الاسم": s["الاسم"],
                 "category": s["category"],
-                "purchase_price": s["cost"],
+                "سعر_الشراء": s["التكلفة"],
                 "selling_price": s["sell"],
-                "notes": "" if text == "-" else text,
-                "active": True
+                "ملاحظات": "" إذا كان النص يساوي "-" وإلا النص،
+                "نشط": صحيح
             })
-            send(chat_id, "✅ تمت إضافة المنتج بنجاح.")
-        except Exception as e:
-            send(chat_id, f"❌ تعذرت الإضافة: {e}")
-        finally:
+            send(chat_id, "✅ أكمل إضافة المنتج الفعال.")
+        باستثناء الاستثناء كـ e:
+            send(chat_id, f"❌ عذرت الإضافة: {e}")
+        أخيرًا:
             states.pop(uid, None)
 
 
 # =====================================
-# EDIT PRODUCT
+# تحرير المنتج
 # =====================================
 
-def start_edit(chat_id, uid, pid):
+دالة بدء التحرير (معرف_الدردشة، معرف_الشخص، معرف_العملية):
     p = product_by_id(pid)
-    if not p or not p.get("active"):
+    إذا لم يكن p أو لم يكن p.get("active"):
         send(chat_id, "المنتج غير متاح.")
-        return
+        إرجاع
 
     states[uid] = {
         "step": "edit_cost",
         "pid": pid,
-        "name": p["name"]
+        "الاسم": p["الاسم"]
     }
-    send(
+    إرسال(
         chat_id,
-        f"تعديل {p['name']}\n"
+        f" تمر {p['name']}\n"
         f"سعر الشراء الحالي: {fmt(p['purchase_price'])}\n"
-        f"سعر البيع الحالي: {fmt(p['selling_price'])}\n\n"
+        f"السعر الحالي: {fmt(p['sale_price'])}\n\n"
         "أرسل سعر الشراء الجديد."
     )
 
 
-def edit_step(chat_id, uid, text):
+دالة edit_step(chat_id, uid, text):
     s = states[uid]
-    try:
+    حاول:
         x = float(text.replace(",", "."))
-        if x < 0:
-            raise ValueError()
-    except ValueError:
-        send(chat_id, "أدخل مبلغاً صحيحاً.")
-        return
+        إذا كانت قيمة x أقل من 0:
+            ارفع ValueError()
+    باستثناء ValueError:
+        send(chat_id, "أدخل مبلغاً عادياً.")
+        إرجاع
 
-    if s["step"] == "edit_cost":
+    إذا كانت قيمة s["step"] تساوي "edit_cost":
         s["cost"] = x
         s["step"] = "edit_sell"
         send(chat_id, "أرسل سعر البيع الجديد.")
 
-    else:
-        try:
+    وإلا:
+        حاول:
             db(
-                "PATCH", "products",
+                "PATCH"، "products"،
                 {"id": f"eq.{s['pid']}"},
                 {
-                    "purchase_price": s["cost"],
+                    "سعر_الشراء": s["التكلفة"],
                     "selling_price": x
                 }
             )
-            send(chat_id, "✅ تم تحديث الأسعار بنجاح.")
-        except Exception as e:
-            send(chat_id, f"❌ خطأ: {e}")
-        finally:
+            send(chat_id, ""تم تحديث المنتجات الفعالة.")
+        باستثناء الاستثناء كـ e:
+            إرسال(chat_id, f"❌ خطأ: {e}")
+        أخيرًا:
             states.pop(uid, None)
 
 
 # =====================================
-# CUSTOMERS
+# عملاء
 # =====================================
 
 def show_customers(chat_id):
-    try:
-        rows = customers()
-        if not rows:
+    حاول:
+        صفوف = عملاء()
+        إذا لم تكن هناك صفوف:
             send(chat_id, "لا يوجد عملاء مسجلون.")
-            return
+            إرجاع
 
-        lines = ["👥 العملاء:\n"]
+        خطوط = ["👥 العملاء:\n"]
         for c in rows:
             lines.append(
                 f"• {c.get('name', 'بدون اسم')} "
                 f"| {c.get('phone') or '-'}"
             )
         send(chat_id, "\n".join(lines))
-    except Exception as e:
-        send(chat_id, f"❌ خطأ: {e}")
+    باستثناء الاستثناء كـ e:
+        إرسال(chat_id, f"❌ خطأ: {e}")
 
 
 def start_add_customer(chat_id, uid):
@@ -334,64 +334,64 @@ def start_add_customer(chat_id, uid):
     send(chat_id, "أرسل اسم العميل.")
 
 
-def add_customer_step(chat_id, uid, text):
+دالة إضافة خطوة للعميل(معرف_المحادثة، معرف_الموظف، النص):
     s = states[uid]
-    if s["step"] == "c_name":
-        s["name"] = text
+    إذا كان s["step"] يساوي "c_name":
+        s["name"] = نص
         s["step"] = "c_phone"
-        send(chat_id, "أرسل رقم الهاتف أو - إذا لم يتوفر.")
+        send(chat_id, "أرسل رقم الهاتف أو - إذا لم يدعى."")
 
-    else:
-        try:
+    وإلا:
+        حاول:
             db("POST", "customers", body={
-                "name": s["name"],
-                "phone": None if text == "-" else text
+                "الاسم": s["الاسم"],
+                "phone": لا شيء إذا كان النص يساوي "-" وإلا نص
             })
-            send(chat_id, "✅ تمت إضافة العميل.")
-        except Exception as e:
-            send(chat_id, f"❌ تعذرت إضافة العميل: {e}")
-        finally:
+            send(chat_id, "✅ متابعة إضافة العميل.")
+        باستثناء الاستثناء كـ e:
+            send(chat_id, f"❌ عذرًا إضافة العميل: {e}")
+        أخيرًا:
             states.pop(uid, None)
 
 
 # =====================================
-# SALES
+# مبيعات
 # =====================================
 
 def start_sale(chat_id):
-    rows = products()
-    if not rows:
-        send(chat_id, "لا توجد منتجات. أضف منتجاً أولاً.")
-        return
+    صفوف = منتجات()
+    إذا لم تكن هناك صفوف:
+        send(chat_id, "لا توجد. إضافة منتجات منتجاً الجمعة."")
+        إرجاع
 
-    keyboard = []
+    لوحة المفاتيح = []
     for p in rows[:40]:
         keyboard.append([{
-            "text": p["name"],
+            "نص": p["اسم"],
             "callback_data": f"saleproduct:{p['id']}"
         }])
 
-    send(chat_id, "🛒 اختر المنتج الذي تريد بيعه:", keyboard)
+    send(chat_id, "🛒 اختر المنتج الذي تريد بيعه:"، Keyboard)
 
 
-def select_sale_product(chat_id, uid, pid):
+دالة select_sale_product(chat_id, uid, pid):
     p = product_by_id(pid)
-    if not p or not p.get("active"):
+    إذا لم يكن p أو لم يكن p.get("active"):
         send(chat_id, "المنتج غير متاح.")
-        return
+        إرجاع
 
     states[uid] = {
         "step": "sale_customer",
         "pid": pid,
-        "name": p["name"],
-        "cost": float(p["purchase_price"]),
-        "price": float(p["selling_price"])
+        "الاسم": p["الاسم"],
+        "التكلفة": float(p["سعر_الشراء"]),
+        "السعر": float(p["selling_price"])
     }
 
-    try:
-        rows = customers()
-        keyboard = [[{
-            "text": c.get("name", "عميل"),
+    حاول:
+        صفوف = عملاء()
+        لوحة المفاتيح = [[{
+            "text": c.get("name", "البريد"),
             "callback_data": f"salecustomer:{c['id']}"
         }] for c in rows[:30]]
 
@@ -400,140 +400,140 @@ def select_sale_product(chat_id, uid, pid):
             "callback_data": "sale_newcustomer"
         }])
 
-        send(
+        إرسال(
             chat_id,
             f"📦 المنتج: {p['name']}\n"
-            f"سعر البيع: {fmt(p['selling_price'])} دج\n"
-            f"التكلفة: {fmt(p['purchase_price'])} دج\n\n"
-            "اختر العميل:",
-            keyboard
+            f"السعر: {fmt(p['sale_price'])} دج\n"
+            f"الطلب: {fmt(p['purchase_price'])} دج\n\n"
+            "اختر جو:",
+            لوحة المفاتيح
         )
-    except Exception as e:
+    باستثناء الاستثناء كـ e:
         send(chat_id, f"❌ خطأ في العملاء: {e}")
 
 
-def choose_sale_customer(chat_id, uid, cid):
+دالة اختيار عميل البيع (معرف الدردشة، معرف المستخدم، معرف العميل):
     c = customer_by_id(cid)
-    if not c:
-        send(chat_id, "العميل غير موجود.")
-        return
+    إذا لم يكن ج:
+        إرسال (chat_id، "العميل غير موجود.")
+        إرجاع
 
     s = states.get(uid)
-    if not s:
-        send(chat_id, "انتهت العملية. ابدأ بيعاً جديداً.")
-        return
+    إذا لم يكن s:
+        send(chat_id, "انتهت الحرارة. ابدأ بيعاً جديداً.")
+        إرجاع
 
     s["customer_id"] = cid
     s["customer_name"] = c.get("name", "")
     s["step"] = "sale_paid"
-    send(
+    إرسال(
         chat_id,
-        f"العميل: {s['customer_name']}\n"
+        f"البريد الإلكتروني: {s['customer_name']}\n"
         f"سعر البيع المقترح: {fmt(s['price'])} دج\n\n"
-        "أرسل المبلغ الذي دفعه العميل."
+        "أرسل الاتحاد الذي دفعه العميل."
     )
 
 
 def choose_new_customer(chat_id, uid):
     s = states.get(uid)
-    if not s:
-        return
+    إذا لم يكن s:
+        إرجاع
     s["step"] = "sale_new_name"
     send(chat_id, "أرسل اسم العميل الجديد، أو أرسل - للبيع دون تسجيل اسم.")
 
 
-def save_sale(chat_id, uid, paid):
+دالة حفظ_البيع(معرف_المحادثة، معرف_الموظف، مدفوع):
     s = states.get(uid)
-    if not s:
-        send(chat_id, "انتهت العملية. ابدأ من جديد.")
-        return
+    إذا لم يكن s:
+        send(chat_id, "انتهت الحرارة. ابدأ من جديد.")
+        إرجاع
 
-    price = s["price"]
-    cost = s["cost"]
+    السعر = s["السعر"]
+    التكلفة = s["التكلفة"]
 
-    if paid < 0:
+    إذا كان المبلغ المدفوع أقل من صفر:
         send(chat_id, "المبلغ لا يمكن أن يكون سالباً.")
-        return
+        إرجاع
 
-    total = price
-    profit = total - cost
-    remaining = max(total - paid, 0)
+    الإجمالي = السعر
+    الربح = الإجمالي - التكلفة
+    المتبقي = الحد الأقصى (الإجمالي - المدفوع، 0)
 
-    if paid > total:
-        send(
+    إذا كان المبلغ المدفوع أكبر من الإجمالي:
+        إرسال(
             chat_id,
             f"المبلغ المدفوع أكبر من سعر البيع ({fmt(total)} دج).\n"
-            "أعد إدخال المبلغ."
+            "أعد العلامة التجارية."
         )
-        return
+        إرجاع
 
     body = {
         "customer_id": s.get("customer_id"),
         "product_id": s["pid"],
-        "quantity": 1,
-        "selling_unit_price": price,
+        الكمية: 1،
+        "selling_unit_price": السعر،
         "purchase_unit_cost": cost,
-        "total_amount": total,
+        "total_amount": الإجمالي،
         "total_cost": cost,
-        "paid_amount": paid,
-        "profit": profit,
-        "notes": (
+        "paid_amount": مدفوع،
+        «الربح»: الربح،
+        «ملاحظات»: (
             f"العميل: {s.get('customer_name', 'غير مسجل')}; "
             f"المتبقي: {remaining}"
         )
     }
 
-    try:
+    حاول:
         db("POST", "sales", body=body)
 
-        send(
+        إرسال(
             chat_id,
-            "✅ تم تسجيل البيع بنجاح!\n\n"
+            "✅ تم تسجيل فعال!\n\n"
             f"📦 المنتج: {s['name']}\n"
             f"👤 العميل: {s.get('customer_name', 'غير مسجل')}\n"
             f"💰 سعر البيع: {fmt(total)} دج\n"
             f"📉 التكلفة: {fmt(cost)} دج\n"
-            f"🟢 الربح الإجمالي: {fmt(profit)} دج\n"
-            f"💳 المدفوع: {fmt(paid)} دج\n"
-            f"⏳ المتبقي: {fmt(remaining)} دج"
+            f"🟢 تسويق الإعلانات: {fmt(profit)} دج\n"
+            f"💳 المدفوع: {fmt(payed)} دج\n"
+            f"⏳ النهائي: {fmt(remaining)} دج"
         )
 
-    except Exception as e:
+    باستثناء الاستثناء كـ e:
         send(chat_id, f"❌ لم يتم حفظ البيع:\n{e}")
 
-    finally:
+    أخيرًا:
         states.pop(uid, None)
 
 
 # =====================================
-# REPORT
+# تقرير
 # =====================================
 
 def sales_report(chat_id):
-    try:
-        rows = db(
-            "GET", "sales",
+    حاول:
+        صفوف = قاعدة البيانات (
+            "GET"، "sales"،
             {
                 "select": "total_amount,total_cost,paid_amount,profit",
-                "limit": "1000"
+                "الحد": "1000"
             }
         )
 
-        total_sales = sum(float(x.get("total_amount") or 0) for x in rows)
-        total_cost = sum(float(x.get("total_cost") or 0) for x in rows)
+        إجمالي_المبيعات = مجموع(عدد_عشري(x.get("إجمالي_المبلغ") أو 0) لكل x في الصفوف)
+        التكلفة_الإجمالية = مجموع(عدد_عشري(x.get("التكلفة_الإجمالية") أو 0) لكل x في الصفوف)
         total_paid = sum(float(x.get("paid_amount") or 0) for x in rows)
-        profit = sum(float(x.get("profit") or 0) for x in rows)
+        الربح = مجموع (عدد عشري (x.get("الربح") أو 0) لكل x في الصفوف)
 
-        send(
+        إرسال(
             chat_id,
-            "📊 تقرير المبيعات المسجلة\n\n"
-            f"عدد العمليات: {len(rows)}\n"
+            "📊 تقرير المبيعات الجديدة\n\n"
+            f" عدد الصفوف: {len(rows)}\n"
             f"إجمالي المبيعات: {fmt(total_sales)} دج\n"
             f"إجمالي التكلفة: {fmt(total_cost)} دج\n"
-            f"المبالغ المحصلة: {fmt(total_paid)} دج\n"
-            f"الربح الإجمالي: {fmt(profit)} دج"
+            f"المبالغ المحصلة: {fmt(total_pay)} دج\n"
+            f"الربح المعلن: {fmt(profit)} دج"
         )
-    except Exception as e:
+    باستثناء الاستثناء كـ e:
         send(chat_id, f"❌ تعذر إعداد التقرير:\n{e}")
 
 
@@ -543,7 +543,7 @@ def sales_report(chat_id):
 
 @app.route("/")
 def home():
-    return "Islam TV For You Bot is running!"
+    "يعمل بوت Islam TV For You!"
 
 
 @app.route("/telegram-webhook", methods=["POST"])
@@ -552,23 +552,23 @@ def webhook():
 
     callback = data.get("callback_query")
 
-    if callback:
-        user = callback.get("from", {})
+    إذا كان رد الاتصال:
+        المستخدم = callback.get("from", {})
         uid = str(user.get("id", ""))
         chat_id = callback.get("message", {}).get("chat", {}).get("id")
         action = callback.get("data", "")
 
         callback_answer(callback.get("id"))
 
-        if not OWNER_ID or uid != OWNER_ID:
-            return "OK"
+        إذا لم يكن OWNER_ID أو uid != OWNER_ID:
+            إرجاع "موافق"
 
-        if action == "menu":
+        إذا كان الإجراء يساوي "القائمة":
             main_menu(chat_id)
         elif action == "sale":
             start_sale(chat_id)
         elif action == "products":
-            show_products(chat_id)
+            عرض_المنتجات(معرف_الدردشة)
         elif action == "addproduct":
             start_add_product(chat_id, uid)
         elif action == "editproduct":
@@ -592,113 +592,113 @@ def webhook():
             start_edit(chat_id, uid, action.split(":", 1)[1])
         elif action.startswith("off:"):
             pid = action.split(":", 1)[1]
-            try:
+            حاول:
                 db("PATCH", "products", {"id": f"eq.{pid}"}, {"active": False})
-                send(chat_id, "✅ تم إيقاف المنتج دون حذف سجله.")
-            except Exception as e:
-                send(chat_id, f"❌ خطأ: {e}")
+                send(chat_id, ""تم إيقاف المنتج دون حذف السجل.")
+            باستثناء الاستثناء كـ e:
+                إرسال(chat_id, f"❌ خطأ: {e}")
 
-        return "OK"
+        إرجاع "موافق"
 
     message = data.get("message", {})
     chat_id = message.get("chat", {}).get("id")
     uid = str(message.get("from", {}).get("id", ""))
     text = (message.get("text") or "").strip()
 
-    if not chat_id or not text:
-        return "OK"
+    إذا لم يكن chat_id أو لم يكن نصًا:
+        إرجاع "موافق"
 
-    if not OWNER_ID or uid != OWNER_ID:
+    إذا لم يكن OWNER_ID أو uid != OWNER_ID:
         send(chat_id, "⛔ هذا البوت خاص بصاحبه فقط.")
-        return "OK"
+        إرجاع "موافق"
 
-    if text == "/cancel":
+    إذا كان النص يساوي "/إلغاء":
         states.pop(uid, None)
-        send(chat_id, "تم إلغاء العملية.")
-        return "OK"
+        send(chat_id, "تم إلغاء العزل.")
+        إرجاع "موافق"
 
-    if text in ("/start", "/menu"):
+    إذا كان النص موجودًا في ("/start", "/menu"):
         main_menu(chat_id)
-        return "OK"
+        إرجاع "موافق"
 
-    if text == "/status":
-        try:
+    إذا كان النص يساوي "/status":
+        حاول:
             db("GET", "products", {"select": "id", "limit": "1"})
             send(chat_id, "✅ البوت يعمل\n✅ Supabase متصل\n✅ حساب المالك محمي")
-        except Exception as e:
+        باستثناء الاستثناء كـ e:
             send(chat_id, f"❌ مشكلة اتصال Supabase:\n{e}")
-        return "OK"
+        إرجاع "موافق"
 
-    if text == "/help":
-        send(chat_id, "استعمل الأزرار في القائمة الرئيسية.\n/cancel لإلغاء أي عملية.")
-        return "OK"
+    إذا كان النص يساوي "/help":
+        send(chat_id, "الأزرار المستعملة في القائمة الرئيسية.\n/إلغاء لإلغاء أي عملية.")
+        إرجاع "موافق"
 
     s = states.get(uid, {})
-    step = s.get("step", "")
+    الخطوة = s.get("الخطوة", "")
 
-    if step.startswith("p_"):
+    إذا كانت الخطوة تبدأ بـ "p_":
         add_product_step(chat_id, uid, text)
     elif step.startswith("edit_"):
         edit_step(chat_id, uid, text)
     elif step.startswith("c_"):
         add_customer_step(chat_id, uid, text)
     elif step == "sale_paid":
-        try:
-            paid = float(text.replace(",", "."))
+        حاول:
+            تم الدفع = float(text.replace(",", "."))
             save_sale(chat_id, uid, paid)
-        except ValueError:
-            send(chat_id, "أدخل مبلغاً صحيحاً.")
+        باستثناء ValueError:
+            send(chat_id, "أدخل مبلغاً عادياً.")
     elif step == "sale_new_name":
         s["customer_name"] = "" if text == "-" else text
         s["step"] = "sale_new_phone"
         send(chat_id, "أرسل رقم الهاتف أو - بدون رقم.")
     elif step == "sale_new_phone":
-        try:
-            if s.get("customer_name"):
+        حاول:
+            إذا كان s.get("customer_name"):
                 new_customer = db("POST", "customers", body={
-                    "name": s["customer_name"],
-                    "phone": None if text == "-" else text
+                    "الاسم": s["اسم_العميل"],
+                    "phone": لا شيء إذا كان النص يساوي "-" وإلا نص
                 })
-                if new_customer:
+                إذا كان العميل جديدًا:
                     s["customer_id"] = new_customer[0]["id"]
             s["step"] = "sale_paid"
-            send(
+            إرسال(
                 chat_id,
-                f"المنتج: {s['name']}\n"
-                f"سعر البيع: {fmt(s['price'])} دج\n"
-                "أرسل المبلغ المدفوع."
+                f"العلامة: {s['name']}\n"
+                f"السعر: {fmt(s['price'])} دج\n"
+                "أرسل رسالة الإيصال."
             )
-        except Exception as e:
+        باستثناء الاستثناء كـ e:
             send(chat_id, f"❌ خطأ في تسجيل العميل: {e}")
 
-    else:
-        send(chat_id, "اختر عملية من القائمة الرئيسية: /start")
+    وإلا:
+        send(chat_id, "اختر الطريقة من القائمة الرئيسية: /start")
 
-    return "OK"
+    إرجاع "موافق"
 
 
 # =====================================
-# WEBHOOK SETUP
+# إعداد خطاف الويب
 # =====================================
 
 @app.route("/set-webhook")
 def set_webhook():
     render_url = os.environ.get("RENDER_EXTERNAL_URL", "")
-    if not BOT_TOKEN or not render_url:
-        return "Missing configuration", 500
+    إذا لم يكن رمز البوت أو لم يكن عنوان URL للعرض:
+        إرجاع "التكوين مفقود"، 500
 
     url = render_url.rstrip("/") + "/telegram-webhook"
-    try:
+    حاول:
         return requests.post(
             f"{TG}/setWebhook",
             json={"url": url},
-            timeout=20
+            مهلة = 20
         ).text
-    except Exception as e:
-        return str(e), 500
+    باستثناء الاستثناء كـ e:
+        إرجاع str(e)، 500
 
 
-if __name__ == "__main__":
+إذا كان __name__ == "__main__":
     app.run(
         host="0.0.0.0",
         port=int(os.environ.get("PORT", 10000))
