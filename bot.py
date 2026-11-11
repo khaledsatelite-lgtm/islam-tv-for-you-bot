@@ -134,9 +134,19 @@ def get_products(category=None, active=True):
     }
     if active:
         params["active"] = "eq.true"
+    rows = db("GET", "products", params)
     if category:
-        params["category"] = f"eq.{category}"
-    return db("GET", "products", params)
+        aliases = {
+            "IPTV": {"iptv"},
+            "RECEIVER": {"receiver", "receivers", "أجهزة الاستقبال"},
+            "OFFICIAL": {"official", "official subscriptions", "الاشتراكات الرسمية"},
+        }
+        accepted = aliases.get(str(category).strip().upper(), {str(category).strip().casefold()})
+        rows = [
+            row for row in rows
+            if str(row.get("category") or "").strip().casefold() in accepted
+        ]
+    return rows
 
 
 def get_product(pid):
